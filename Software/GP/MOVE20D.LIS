@@ -1,0 +1,207 @@
+00000000                                     1  *********************************************************
+00000000                                     2  *                      GC.ASM                           *
+00000000                                     3  * transportiert das GP an´s RAM-Ende                    *
+00000000                                     4  *********************************************************
+00000000                                     5  
+00000000                                     6  
+00000000                                     7  * KONSTANTEN
+00000000                                     8  
+00000000  =00000004                          9  cpu     equ     4		* 1=68008, 2=68000, 4=68020
+00000000  =FFFFFF24                         10  bank    equ     $ffffffc9*cpu   * Bankenregister
+00000000                                    11  
+00000000  =003C0000                         12  gpziel	equ	$3C0000		* fuer 68020 (4MB Vollausbau in NKC - 128K GP + 128KRAM hinter GP)
+00000000                                    13  *gpziel	equ $....		* bei Verwendung der RAM Erweiterung und entsprechendem GP
+00000000                                    14  
+00000000  =00030000                         15  bbziel   equ     $30000       * Zielbereich (RAM-Start) )für BBOOT Code (muss im RAM liegen)
+00000000                                    16  							* RAM beginnt bei $20000 (>128KB)
+00000000                                    17  				
+00000000  =00000200                         18  gpstart equ     $200         * Startadresse des GP im EPROM (Offset $200 im EPROM)
+00000000  =0000FFFE                         19  gpsize  equ     $FFFE		* Laenge des GP in Worten(16Bit) = (128KB)
+00000000                                    20  
+00000000                                    21  
+00000000                                    22  * Konstanten f. Seriell:
+00000000  =FFFFFFC0                         23  serbase         equ $FFFFFFF0*cpu
+00000000  =FFFFFFCC                         24  control         equ $FFFFFFF3*cpu
+00000000  =FFFFFFC8                         25  command         equ $FFFFFFF2*cpu
+00000000  =FFFFFFC4                         26  status          equ $FFFFFFF1*cpu
+00000000  =FFFFFFC0                         27  transmit        equ $FFFFFFF0*cpu
+00000000  =FFFFFFC0                         28  receive         equ $FFFFFFF0*cpu
+00000000                                    29  
+00000000                                    30  
+00000000                                    31  *****
+00000000                                    32  
+00000000                                    33        ORG $0              	  * code fuer $0 erzeugen (EPROM)
+00000000                                    34        
+00000000  00011FFE                          35        DC.L $11FFE              * dummy stack
+00000004  00000008                          36        DC.L start                  * reset vector
+00000008                                    37         
+00000008                                    38  start:
+00000008                                    39  
+00000008                                    40  					
+00000008                                    41  initser:						* Iinitialisiert Serielle Schnittstelle (DEBUG)
+00000008                                    42  
+00000008  11FC 001E FFCC                    43          move.b #$1E,control       * 8N1,9600 init
+0000000E  11FC 000B FFC8                    44          move.b #$0B,command       * no parity, rec/trans enable, no IRQ, no
+00000014                                    45          
+00000014                                    46  ******************* MELDUNG AN SER AUSGEBEN ********************        
+00000014  41FA 00F0                         47          lea HELLOMSG(pc),a0    * zu sendenden string nach A0
+00000018                                    48  
+00000018  11D8 FFC0                         49  text01_1:  		move.b (A0)+,transmit * ein zeichen an ser ausgeben
+0000001C  670C                              50          		beq.s text01_3			* ende falls =0
+0000001E                                    51  
+0000001E  4BFA 0008                         52                  lea text01_2(pc),a5   * Rücksprungadresse nach a5                
+00000022  43FA 00D8                         53                  lea txwait(pc),a1
+00000026  4ED1                              54                  jmp (a1)                     * Unterprogramm anspringen (wart
+00000028                                    55  text01_2:
+00000028  60EE                              56          		bra text01_1
+0000002A                                    57  text01_3:        		
+0000002A                                    58  **************************************************************************
+0000002A                                    59          
+0000002A                                    60          
+0000002A                                    61  ********* GP in's RAM kopieren **************
+0000002A                                    62            		
+0000002A  363C FFFE                         63          move.w #gpsize,d3
+0000002E  41F9 003C0000                     64          lea gpziel,a0
+00000034  43F8 0200                         65          lea gpstart,a1         * Start Adresse des GPs im EPROM
+00000038                                    66  gpmove:
+00000038  30D9                              67          move.w (a1)+,(a0)+
+0000003A  51CB FFFC                         68          dbra d3,gpmove
+0000003E                                    69          
+0000003E                                    70          
+0000003E                                    71          
+0000003E                                    72  ******************* MELDUNG AN SER AUSGEBEN ********************        
+0000003E  41FA 00DC                         73          		lea STEP1(pc),a0    * zu sendenden string nach A0
+00000042                                    74  
+00000042  11D8 FFC0                         75  text02_1:  		move.b (A0)+,transmit * ein zeichen an ser ausgeben
+00000046  670C                              76          		beq.s text02_3			* ende falls =0
+00000048                                    77  
+00000048  4BFA 0008                         78                  lea text02_2(pc),a5   * Rücksprungadresse nach a5                
+0000004C  43FA 00AE                         79                  lea txwait(pc),a1
+00000050  4ED1                              80                  jmp (a1)                     * Unterprogramm anspringen (wart
+00000052                                    81  text02_2:
+00000052  60EE                              82          		bra text02_1
+00000054                                    83  text02_3:        		
+00000054                                    84  **************************************************************************
+00000054                                    85          
+00000054                                    86          
+00000054  4EF9 0000005A                     87           jmp bboot
+0000005A                                    88  
+0000005A                                    89  *********************************************************
+0000005A                                    90  *                      BBOOT.ASM                        *
+0000005A                                    91  * bootet das GP im hinteren RAM Bereich und             *
+0000005A                                    92  * blendet das EPROM aus                                 *
+0000005A                                    93  *********************************************************
+0000005A                                    94  
+0000005A                                    95  bboot:
+0000005A  363C 0071                         96          move #ende-anf-1,d3
+0000005E  41F9 00030000                     97          lea bbziel,a0
+00000064  43FA 0024                         98          lea anf(pc),a1
+00000068                                    99  
+00000068                                   100  transport:
+00000068  10D9                             101          move.b (a1)+,(a0)+
+0000006A  51CB FFFC                        102          dbra d3,transport
+0000006E                                   103          
+0000006E                                   104          
+0000006E                                   105  
+0000006E                                   106  ******************* MELDUNG AN SER AUSGEBEN ********************        
+0000006E  41FA 00C2                        107          		lea STEP2(pc),a0    * zu sendenden string nach A0
+00000072                                   108  
+00000072  11D8 FFC0                        109  text03_1:  		move.b (A0)+,transmit * ein zeichen an ser ausgeben
+00000076  670C                             110          		beq.s text03_3			* ende falls =0
+00000078                                   111  
+00000078  4BFA 0008                        112                  lea text03_2(pc),a5   * Rücksprungadresse nach a5                
+0000007C  43FA 007E                        113                  lea txwait(pc),a1
+00000080  4ED1                             114                  jmp (a1)                     * Unterprogramm anspringen (wart
+00000082                                   115  text03_2:
+00000082  60EE                             116          		bra text03_1
+00000084                                   117  text03_3:        		
+00000084                                   118  **************************************************************************
+00000084                                   119          
+00000084  4EF9 00030000                    120          jmp bbziel
+0000008A                                   121  
+0000008A                                   122  anf:
+0000008A                                   123  boot:
+0000008A                                   124  
+0000008A                                   125  
+0000008A                                   126  ******************* MELDUNG AN SER AUSGEBEN ********************        
+0000008A  41FA 00BC                        127          		lea STEP3(pc),a0    * zu sendenden string nach A0
+0000008E                                   128  
+0000008E  11D8 FFC0                        129  text04_1:  		move.b (A0)+,transmit * ein zeichen an ser ausgeben
+00000092  670C                             130          		beq.s text04_3			* ende falls =0
+00000094                                   131  
+00000094  4BFA 0008                        132                  lea text04_2(pc),a5   * Rücksprungadresse nach a5                
+00000098  43FA 0062                        133                  lea txwait(pc),a1
+0000009C  4ED1                             134                  jmp (a1)                     * Unterprogramm anspringen (wart
+0000009E                                   135  text04_2:
+0000009E  60EE                             136          		bra text04_1
+000000A0                                   137  text04_3:        		
+000000A0                                   138  **************************************************************************
+000000A0                                   139  
+000000A0  11FC 0080 FF24                   140          move.b #$80,bank
+000000A6                                   141          
+000000A6                                   142  
+000000A6                                   143  
+000000A6                                   144  ******************* MELDUNG AN SER AUSGEBEN ********************        
+000000A6  41FA 00A0                        145          		lea STEP3(pc),a0    * zu sendenden string nach A0
+000000AA                                   146  
+000000AA  11D8 FFC0                        147  text05_1:  		move.b (A0)+,transmit * ein zeichen an ser ausgeben
+000000AE  670C                             148          		beq.s text05_3			* ende falls =0
+000000B0                                   149  
+000000B0  4BFA 0008                        150                  lea text05_2(pc),a5   * Rücksprungadresse nach a5                
+000000B4  43FA 0046                        151                  lea txwait(pc),a1
+000000B8  4ED1                             152                  jmp (a1)                     * Unterprogramm anspringen (wart
+000000BA                                   153  text05_2:
+000000BA  60EE                             154          		bra text05_1
+000000BC                                   155  text05_3:        		
+000000BC                                   156  **************************************************************************
+000000BC                                   157          
+000000BC  41F9 003C0000                    158          lea gpziel,a0
+000000C2                                   159  loop:
+000000C2  0C90 5AA58001                    160          cmp.l #$5aa58001,(a0)
+000000C8  6708                             161          beq.s gefunden
+000000CA  D1FC 00000004                    162          adda.l #$4,a0
+000000D0  60F0                             163          bra.s loop
+000000D2                                   164  
+000000D2                                   165  gefunden:
+000000D2                                   166  
+000000D2                                   167  
+000000D2                                   168  
+000000D2                                   169  ******************* MELDUNG AN SER AUSGEBEN ********************        
+000000D2  41FA 00A0                        170          		lea STEP5(pc),a0    * zu sendenden string nach A0
+000000D6                                   171  
+000000D6  11D8 FFC0                        172  text06_1:  		move.b (A0)+,transmit * ein zeichen an ser ausgeben
+000000DA  670C                             173          		beq.s text06_3			* ende falls =0
+000000DC                                   174  
+000000DC  4BFA 0008                        175                  lea text06_2(pc),a5   * Rücksprungadresse nach a5                
+000000E0  43FA 001A                        176                  lea txwait(pc),a1
+000000E4  4ED1                             177                  jmp (a1)                     * Unterprogramm anspringen (wart
+000000E6                                   178  text06_2:
+000000E6  60EE                             179          		bra text06_1
+000000E8                                   180  text06_3:        		
+000000E8                                   181  **************************************************************************
+000000E8                                   182  
+000000E8  0C68 6000 0020                   183          cmp #$6000,$20(a0)
+000000EE  66D2                             184          bne.s loop
+000000F0  0C68 6000 0024                   185          cmp #$6000,$24(a0)
+000000F6  66CA                             186          bne.s loop
+000000F8  4EE8 0024                        187          jmp $24(a0)
+000000FC                                   188          
+000000FC                                   189  
+000000FC                                   190  ende:
+000000FC                                   191  
+000000FC  0838 0004 FFC4                   192  txwait: 		btst.b #4,status                * Unterprogramm: warten bis tx leer
+00000102  67F8                             193                  beq txwait
+00000104  4ED5                             194                  jmp (a5)    
+00000106                                   195  
+00000106                                   196  * Texte
+00000106                                   197  
+00000106  36 38 30 32 30 20 42 6F 6F ...   198  HELLOMSG: DC.B '68020 Bootloader...',$d,$a,0
+0000011C  6D 6F 76 69 6E 67 20 62 6F ...   199  STEP1:    DC.B 'moving bootstrap...',$d,$a,0
+00000132  6A 75 6D 70 20 74 6F 20 62 ...   200  STEP2:	  DC.B 'jump to boostrap...',$d,$a,0
+00000148  73 77 69 74 63 68 20 42 41 ...   201  STEP3:    DC.B 'switch BANKENREG...',$d,$a,0
+0000015E  73 65 61 72 63 68 20 47 50 ...   202  STEP4:    DC.B 'search GP in RAM...',$d,$a,0
+00000174  66 6F 75 6E 64 20 47 50 20 ...   203  STEP5:    DC.B 'found GP , jump...',$d,$a,0
+00000189                                   204  
+
+No errors detected
+No warnings generated

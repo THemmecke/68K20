@@ -1,0 +1,100 @@
+00000000                                     1  *********************************************************
+00000000                                     2  *                      GC.ASM                           *
+00000000                                     3  * transportiert das GP an´s RAM-Ende                    *
+00000000                                     4  *********************************************************
+00000000                                     5  
+00000000                                     6  
+00000000                                     7  * KONSTANTEN
+00000000                                     8  
+00000000  =00000004                          9  cpu     equ     4		* 1=68008, 2=68000, 4=68020
+00000000  =FFFFFF24                         10  bank    equ     $ffffffc9*cpu   * Bankenregister
+00000000                                    11  
+00000000  =003C0000                         12  gpziel	equ	$3C0000		* fuer 68020 (4MB Vollausbau in NKC - 128K GP + 128KRAM hinter GP)
+00000000                                    13  *gpziel	equ $....		* bei Verwendung der RAM Erweiterung und entsprechendem GP
+00000000                                    14  
+00000000  =00030000                         15  bbziel   equ     $30000       * Zielbereich (RAM-Start) )für BBOOT Code (muss im RAM liegen)
+00000000                                    16  							* RAM beginnt bei $20000 (>128KB)
+00000000                                    17  				
+00000000  =00000100                         18  gpstart equ     $100         * Startadresse des GP im EPROM (Offset $200 im EPROM)
+00000000  =0000FFFE                         19  gpsize  equ     $FFFE		* Laenge des GP in Worten(16Bit) = (128KB)
+00000000                                    20  
+00000000                                    21  
+00000000                                    22  * Konstanten f. Seriell:
+00000000  =FFFFFFC0                         23  serbase         equ $FFFFFFF0*cpu
+00000000  =FFFFFFCC                         24  control         equ $FFFFFFF3*cpu
+00000000  =FFFFFFC8                         25  command         equ $FFFFFFF2*cpu
+00000000  =FFFFFFC4                         26  status          equ $FFFFFFF1*cpu
+00000000  =FFFFFFC0                         27  transmit        equ $FFFFFFF0*cpu
+00000000  =FFFFFFC0                         28  receive         equ $FFFFFFF0*cpu
+00000000                                    29  
+00000000                                    30  
+00000000                                    31  *****
+00000000                                    32  
+00000000                                    33        ORG $0              	  * code fuer $0 erzeugen (EPROM)
+00000000                                    34        
+00000000  00011FFE                          35        DC.L $11FFE              * dummy stack
+00000004  00000008                          36        DC.L start                  * reset vector
+00000008                                    37         
+00000008                                    38  start:
+00000008                                    39  
+00000008                                    40  ********* GP in's RAM kopieren **************
+00000008                                    41            		
+00000008  363C FFFE                         42          move.w #gpsize,d3
+0000000C  41F9 003C0000                     43          lea gpziel,a0
+00000012  43F8 0100                         44          lea gpstart,a1         * Start Adresse des GPs im EPROM
+00000016                                    45  gpmove:
+00000016  30D9                              46          move.w (a1)+,(a0)+
+00000018  51CB FFFC                         47          dbra d3,gpmove
+0000001C                                    48          
+0000001C                                    49          
+0000001C                                    50  
+0000001C                                    51  *********************************************************
+0000001C                                    52  *                      BBOOT.ASM                        *
+0000001C                                    53  * bootet das GP im hinteren RAM Bereich und             *
+0000001C                                    54  * blendet das EPROM aus                                 *
+0000001C                                    55  *********************************************************
+0000001C                                    56  
+0000001C                                    57  bboot:
+0000001C  363C 002F                         58          move #ende-anf-1,d3
+00000020  41F9 00030000                     59          lea bbziel,a0
+00000026  43FA 000E                         60          lea anf(pc),a1
+0000002A                                    61  
+0000002A                                    62  transport:
+0000002A  10D9                              63          move.b (a1)+,(a0)+
+0000002C  51CB FFFC                         64          dbra d3,transport
+00000030                                    65          
+00000030                                    66          
+00000030  4EF9 00030000                     67          jmp bbziel
+00000036                                    68  
+00000036                                    69  anf:
+00000036                                    70  boot:
+00000036                                    71  
+00000036  11FC 0080 FF24                    72          move.b #$80,bank
+0000003C                                    73          
+0000003C                                    74  
+0000003C                                    75  
+0000003C                                    76          
+0000003C  41F9 003C0000                     77          lea gpziel,a0
+00000042                                    78  loop:
+00000042  0C90 5AA58001                     79          cmp.l #$5aa58001,(a0)
+00000048  6708                              80          beq.s gefunden
+0000004A  D1FC 00000004                     81          adda.l #$4,a0
+00000050  60F0                              82          bra.s loop
+00000052                                    83  
+00000052                                    84  gefunden:
+00000052                                    85  
+00000052                                    86  
+00000052                                    87  
+00000052                                    88  
+00000052  0C68 6000 0020                    89          cmp #$6000,$20(a0)
+00000058  66E8                              90          bne.s loop
+0000005A  0C68 6000 0024                    91          cmp #$6000,$24(a0)
+00000060  66E0                              92          bne.s loop
+00000062  4EE8 0024                         93          jmp $24(a0)
+00000066                                    94          
+00000066                                    95  
+00000066                                    96  ende:
+00000066                                    97  
+
+No errors detected
+No warnings generated
