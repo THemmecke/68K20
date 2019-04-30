@@ -242,7 +242,7 @@ begin
     -- 25		40ns	2			80ns
     -- 50		20ns	3			60ns
     
-	wait_states_cnt:process(CPU_DS_n_i, CLK_i, SHIFT_REG_s, CPU_DS_n_i)
+	wait_states_cnt:process(CPU_DS_n_i, CLK_i, SHIFT_REG_s)
 	begin
 	 if (CPU_DS_n_i = '1') --or (is_mem_cs_s = '0' and is_io_cs_s = '0')) 			-- reset wait states counter (counter starts when CPU_DS_n_i = 0 and rom_cs_s = 1)
 	 then

@@ -1,0 +1,69 @@
+Name     ADAP030 ;
+PartNo   00 ;
+Date     29.08.2017 ;
+Revision 01 ;
+Designer Engineer ;
+Company  Torsten ;
+Assembly None ;
+Location  ;
+Device g20v8ma ; 
+FORMAT ;
+
+/*
+
+Possible devices: G20V8MA,G22V10, 
+(g20v8ma->Complex Mode)
+*/
+
+/* *************** INPUT PINS *********************/
+PIN  [23,21,20,3,4,5,6,19,7,17,8,18,9,10,11,14,13]   =   [a31..15]; 	/*  ADDRESS                        */ 
+/*PIN  [23,21,20,3,4,5,6,7,17,8,9,10,11,14]   =   [a31..18]; */
+PIN  [2..1]   = [fc1..0]                        ; 	/* Function Codes                                */ 
+
+/* *************** OUTPUT PINS *********************/
+/* it is recommended not to use [!] on negating outputs */
+PIN   22  = ci                        ; /* cache inhibit output                                 */ 
+
+/* **** Constants Definitions ** */
+/*
+$DEFINE FC_CPU_SPACE_c 'b'11
+*/
+/* using bitfileds that do not start a 0 we need to pad a15..0 with zeros, because cupl starts the used bitfields with zero !! */
+/*
+$DEFINE IO_BASE_ADDR_c 'b'11111111111111110000000000000000
+*/
+
+
+
+
+
+/* *** Logic Equations *** */
+
+/*
+
+field FC = [fc1..0];
+field ADDR = [a31..16];
+
+is_cpu_space = FC : FC_CPU_SPACE_c;
+is_io_space = ADDR : IO_BASE_ADDR_c;
+
+
+ci = !( !is_cpu_space & is_io_space ); 
+
+*/
+
+
+
+
+ci = !(      a31 & a30 & a29 & a28 &a27 & a26 & a25 & a24 & a23 & a22 & a21 & a20 & a19 & a18 & a17 & a16 & a15 & !fc1 & !fc0
+	#  a31 & a30 & a29 & a28 &a27 & a26 & a25 & a24 & a23 & a22 & a21 & a20 & a19 & a18 & a17 & a16 & a15 & !fc1 & fc0
+	#  a31 & a30 & a29 & a28 &a27 & a26 & a25 & a24 & a23 & a22 & a21 & a20 & a19 & a18 & a17 & a16 & a15 & fc1 & !fc0 );
+
+
+
+/*
+ci = !(      a31 & a30 & a29 & a28 &a27 & a26 & a25 & a24 & a23 & a22 & a21 & a20 & a19 & a18 & !fc1 & !fc0
+	#  a31 & a30 & a29 & a28 &a27 & a26 & a25 & a24 & a23 & a22 & a21 & a20 & a19 & a18 & !fc1 & fc0
+	#  a31 & a30 & a29 & a28 &a27 & a26 & a25 & a24 & a23 & a22 & a21 & a20 & a19 & a18 & fc1 & !fc0 );
+
+*/	
