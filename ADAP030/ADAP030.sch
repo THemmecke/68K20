@@ -13159,6 +13159,7 @@ DIN A3, landscape with extra doc field</description>
 <segment>
 <pinref part="IC2" gate="G$1" pin="IPEND"/>
 <wire x1="205.74" y1="116.84" x2="185.42" y2="116.84" width="0.1524" layer="91"/>
+<label x="185.42" y="116.84" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="CBACK" class="0">
