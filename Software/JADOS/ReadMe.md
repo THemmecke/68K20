@@ -27,6 +27,6 @@ sr0     11:0    1 1024M  0 rom
 
 2) write image:
 
-...
+```
  [sudo] dd bs=512 count=133320 if=jados.img of=/dev/sdc [status=progress]
-...
+```
