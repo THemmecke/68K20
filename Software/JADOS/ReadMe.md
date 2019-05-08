@@ -1,3 +1,5 @@
+# JADOS 3.50
+
 This directory contains a zipped JADOS image for use with sd cards (GDP-FPGA) and the 680x0 SBCs.
 
 block size: 512 byte
@@ -24,6 +26,7 @@ sr0     11:0    1 1024M  0 rom
 
 
 2) write image:
+
 ...
  [sudo] dd bs=512 count=133320 if=jados.img of=/dev/sdc [status=progress]
 ...
