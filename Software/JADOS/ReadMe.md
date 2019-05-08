@@ -11,7 +11,7 @@ Copy to sd card with linux:
 
 1) check with lsblk where your sd card is mounted:
 
-...
+```
 $ lsblk 
 NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
 fd0      2:0    1    4K  0 disk 
@@ -22,7 +22,7 @@ sda      8:0    0  100G  0 disk
 sdc      8:32   1 14.1M  0 disk     <---- ()
 `-sdc1   8:33   1 13.6M  0 part 
 sr0     11:0    1 1024M  0 rom  
-...
+```
 
 
 2) write image:
